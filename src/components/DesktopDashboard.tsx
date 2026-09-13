@@ -7,7 +7,7 @@ export const DesktopDashboard: React.FC = () => {
     <div className="hidden md:flex flex-col h-screen p-6 z-10 relative max-w-[1600px] mx-auto w-full">
       <header className="mb-6 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">To Do</h1>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Penggawean</h1>
         </div>
         <AuthHeader />
       </header>

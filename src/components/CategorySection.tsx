@@ -81,7 +81,7 @@ export const CategorySection: React.FC<Props> = ({ category, title }) => {
   };
 
   return (
-    <div className="flex flex-col h-full glass rounded-2xl overflow-hidden flex-1 min-h-[300px] relative">
+    <div className="flex flex-col h-full bg-white/5 border border-white/10 md:backdrop-blur-xl md:shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-2xl overflow-hidden flex-1 min-h-[300px] relative">
       {/* Header */}
       <div className="p-4 border-b border-white/5 flex items-center justify-between sticky top-0 bg-white/[0.02] backdrop-blur-md z-10">
         <div className="flex items-center gap-3">

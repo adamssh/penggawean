@@ -53,7 +53,7 @@ export const MobileLayout: React.FC = () => {
             Back
           </button>
         ) : (
-          <h1 className="text-xl font-bold text-white tracking-tight">To Do</h1>
+          <h1 className="text-xl font-bold text-white tracking-tight">Penggawean</h1>
         )}
         <AuthHeader />
       </header>
