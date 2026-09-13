@@ -11,6 +11,7 @@ export interface Task {
   category: Category;
   completed: boolean;
   starred: boolean;
+  position: number;
   createdAt: number;
   updatedAt: number;
   dueDate?: number;

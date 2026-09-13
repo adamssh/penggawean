@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { Task } from '../types';
 import { useTaskStore } from '../store/useTaskStore';
-import { Star } from 'lucide-react';
+import { Star, GripVertical } from 'lucide-react';
 import { format } from 'date-fns';
 import clsx from 'clsx';
 import { TaskForm } from './TaskForm';
 
 interface Props {
   task: Task;
+  dragHandleProps?: Record<string, any>;
 }
 
-export const TaskCard: React.FC<Props> = ({ task }) => {
+export const TaskCard: React.FC<Props> = ({ task, dragHandleProps }) => {
   const { toggleComplete, toggleStar } = useTaskStore();
   const [isEditing, setIsEditing] = useState(false);
 
@@ -55,16 +56,27 @@ export const TaskCard: React.FC<Props> = ({ task }) => {
             )}
           </div>
 
-          <div className={clsx(
-            "flex items-center gap-1 transition-opacity",
-            task.starred ? "opacity-100" : "opacity-100 md:opacity-0 group-hover:opacity-100"
-          )}>
-            <button 
-              onClick={(e) => { e.stopPropagation(); toggleStar(task.id); }}
-              className="p-1.5 rounded-md hover:bg-white/10 text-gray-400 hover:text-yellow-400 transition-colors"
-            >
-              <Star className={clsx("w-4 h-4", task.starred && "fill-yellow-400 text-yellow-400")} />
-            </button>
+          <div className="flex items-center gap-0.5">
+            {dragHandleProps && (
+              <div 
+                {...dragHandleProps}
+                className="p-1.5 rounded-md text-white/20 hover:text-white/40 cursor-grab active:cursor-grabbing touch-none transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100 flex items-center justify-center"
+              >
+                <GripVertical className="w-4 h-4" />
+              </div>
+            )}
+
+            <div className={clsx(
+              "transition-opacity",
+              task.starred ? "opacity-100" : "opacity-100 md:opacity-0 md:group-hover:opacity-100"
+            )}>
+              <button 
+                onClick={(e) => { e.stopPropagation(); toggleStar(task.id); }}
+                className="p-1.5 rounded-md hover:bg-white/10 text-white/20 md:text-gray-400 hover:text-yellow-400 md:hover:text-yellow-400 transition-colors"
+              >
+                <Star className={clsx("w-4 h-4", task.starred && "fill-yellow-400 text-yellow-400")} />
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -11,13 +11,14 @@ interface TaskState {
   clearTasks: () => void;
   fetchTasks: () => Promise<void>;
   handleRealtimeEvent: (payload: any) => void;
-  addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'completed' | 'starred'>) => Promise<void>;
+  addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'completed' | 'starred' | 'position'>) => Promise<void>;
   updateTask: (id: string, updates: Partial<Task>) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   toggleComplete: (id: string) => Promise<void>;
   toggleStar: (id: string) => Promise<void>;
   moveTask: (id: string, category: Category) => Promise<void>;
   clearCompleted: (category: Category) => Promise<void>;
+  reorderTask: (id: string, newPosition: number) => Promise<void>;
 }
 
 const mapToTask = (row: any): Task => ({
@@ -27,6 +28,7 @@ const mapToTask = (row: any): Task => ({
   category: row.category as Category,
   completed: row.completed,
   starred: row.starred,
+  position: row.position ?? new Date(row.created_at).getTime(),
   createdAt: new Date(row.created_at).getTime(),
   updatedAt: new Date(row.updated_at).getTime(),
   dueDate: row.due_date ? new Date(row.due_date).getTime() : undefined,
@@ -67,7 +69,7 @@ export const useTaskStore = create<TaskState>()(
         const { data, error } = await supabase
           .from('tasks')
           .select('*')
-          .order('created_at', { ascending: false });
+          .order('position', { ascending: true });
           
         if (!error && data) {
           set({ tasks: data.map(mapToTask), isLoading: false });
@@ -87,6 +89,7 @@ export const useTaskStore = create<TaskState>()(
           id: taskId,
           completed: false,
           starred: false,
+          position: now,
           createdAt: now,
           updatedAt: now,
         };
@@ -103,6 +106,7 @@ export const useTaskStore = create<TaskState>()(
               title: taskData.title,
               description: taskData.description || null,
               category: taskData.category,
+              position: now,
               due_date: taskData.dueDate ? new Date(taskData.dueDate).toISOString() : null,
             }]);
 
@@ -194,6 +198,20 @@ export const useTaskStore = create<TaskState>()(
 
         if (user) {
           const { error } = await supabase.from('tasks').update({ category, updated_at: new Date().toISOString() }).eq('id', id);
+          if (error) get().fetchTasks();
+        }
+      },
+
+      reorderTask: async (id, newPosition) => {
+        const user = useAuthStore.getState().user;
+        set((state) => ({
+          tasks: state.tasks.map((t) => 
+            t.id === id ? { ...t, position: newPosition, updatedAt: Date.now() } : t
+          ),
+        }));
+
+        if (user) {
+          const { error } = await supabase.from('tasks').update({ position: newPosition, updated_at: new Date().toISOString() }).eq('id', id);
           if (error) get().fetchTasks();
         }
       },

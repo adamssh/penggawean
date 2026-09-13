@@ -1,30 +1,78 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Category } from '../types';
+import { Category, Task } from '../types';
 import { useTaskStore } from '../store/useTaskStore';
 import { TaskCard } from './TaskCard';
 import { CategoryIcon } from './CategoryIcon';
 import { Plus, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface Props {
   category: Category;
   title: string;
 }
 
+function SortableTaskItem({ task }: { task: Task }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : 'auto',
+    position: 'relative' as const,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="relative">
+      <TaskCard task={task} dragHandleProps={{ ...attributes, ...listeners }} />
+    </div>
+  );
+}
+
 export const CategorySection: React.FC<Props> = ({ category, title }) => {
-  const { tasks, addTask, clearCompleted } = useTaskStore();
+  const { tasks, addTask, clearCompleted, reorderTask } = useTaskStore();
   const [isAdding, setIsAdding] = useState(false);
   const [inlineTitle, setInlineTitle] = useState('');
   const [isDoneOpen, setIsDoneOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Configure DnD Sensors
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
   const categoryTasks = tasks
     .filter((t) => t.category === category)
     .sort((a, b) => {
-      if (a.dueDate && b.dueDate) {
-        return a.dueDate - b.dueDate;
+      // Prioritaskan urutan posisi
+      if (a.position !== b.position) {
+        return a.position - b.position;
       }
-      if (a.dueDate) return -1;
-      if (b.dueDate) return 1;
       return a.createdAt - b.createdAt;
     });
     
@@ -65,7 +113,6 @@ export const CategorySection: React.FC<Props> = ({ category, title }) => {
   };
 
   const handleBlur = () => {
-    // Delay blur slightly so submit event can run and refocus if needed
     setTimeout(() => {
       if (document.activeElement !== inputRef.current) {
         handleSaveTask(false);
@@ -77,6 +124,39 @@ export const CategorySection: React.FC<Props> = ({ category, title }) => {
     if (e.key === 'Escape') {
       setInlineTitle('');
       setIsAdding(false);
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const oldIndex = activeTasks.findIndex((t) => t.id === active.id);
+    const newIndex = activeTasks.findIndex((t) => t.id === over.id);
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const newArray = [...activeTasks];
+      const [movedItem] = newArray.splice(oldIndex, 1);
+      newArray.splice(newIndex, 0, movedItem);
+
+      const prev = newArray[newIndex - 1];
+      const next = newArray[newIndex + 1];
+
+      let newPos;
+      if (prev && next) {
+        newPos = (prev.position + next.position) / 2;
+      } else if (prev) {
+        newPos = prev.position + 1024;
+      } else if (next) {
+        newPos = next.position - 1024;
+      } else {
+        newPos = Date.now();
+      }
+
+      reorderTask(active.id as string, newPos);
     }
   };
 
@@ -126,15 +206,27 @@ export const CategorySection: React.FC<Props> = ({ category, title }) => {
                 <button type="submit" className="hidden" tabIndex={-1}>Submit</button>
               </form>
             )}
-            {activeTasks.length === 0 && !isAdding ? (
-              <div className="h-full flex items-center justify-center text-sm text-gray-500">
-                No active tasks
-              </div>
-            ) : (
-              activeTasks.map((task) => (
-                <TaskCard key={task.id} task={task} />
-              ))
-            )}
+            
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext 
+                items={activeTasks.map(t => t.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                {activeTasks.length === 0 && !isAdding ? (
+                  <div className="h-full flex items-center justify-center text-sm text-gray-500">
+                    No active tasks
+                  </div>
+                ) : (
+                  activeTasks.map((task) => (
+                    <SortableTaskItem key={task.id} task={task} />
+                  ))
+                )}
+              </SortableContext>
+            </DndContext>
           </>
         ) : (
           <div className="space-y-3 pb-6">
@@ -164,7 +256,7 @@ export const CategorySection: React.FC<Props> = ({ category, title }) => {
         <button
           onClick={() => {
             setIsDoneOpen(!isDoneOpen);
-            setIsAdding(false); // Cancel any inline adding when opening done list
+            setIsAdding(false);
           }}
           className="w-full p-3 flex items-center justify-between text-sm text-gray-400 hover:text-white transition-colors hover:bg-white/5"
         >
