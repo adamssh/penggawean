@@ -104,7 +104,7 @@ export const CategorySection: React.FC<Props> = ({ category, title }) => {
       </div>
 
       {/* Task List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 overflow-y-auto hide-scrollbar p-4 space-y-3">
         {!isDoneOpen ? (
           <>
             {isAdding && (
@@ -119,7 +119,7 @@ export const CategorySection: React.FC<Props> = ({ category, title }) => {
                   onChange={(e) => setInlineTitle(e.target.value)}
                   onKeyDown={handleKeyDown}
                   onBlur={handleBlur}
-                  placeholder="Ketik nama task lalu tekan enter..."
+                  placeholder="Ketik nama task..."
                   className="w-full bg-transparent text-white text-sm focus:outline-none placeholder:text-gray-400"
                   enterKeyHint="done"
                 />

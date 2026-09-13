@@ -58,7 +58,7 @@ export const MobileLayout: React.FC = () => {
         <AuthHeader />
       </header>
 
-      <main className="flex-1 overflow-y-auto" ref={containerRef}>
+      <main className="flex-1 overflow-y-auto hide-scrollbar" ref={containerRef}>
         {view === 'home' && (
           <div className="p-4 space-y-4">
             <button
